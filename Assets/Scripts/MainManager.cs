@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+    
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
-    
     private bool m_GameOver = false;
+    private int h_points;
+    private string h_name;
 
     
     // Start is called before the first frame update
@@ -36,6 +40,8 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        LoadHighScore();
+        UpdateHighScore();
     }
 
     private void Update()
@@ -70,7 +76,51 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if (m_Points > h_points)
+        {
+            SaveHighScore();
+            LoadHighScore();
+            UpdateHighScore();
+        }
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    public void UpdateHighScore()
+    {
+        HighScoreText.text = "Best Score : " + h_name + " : " + h_points;
+    }
+
+    [System.Serializable]
+    public class HighScoreData
+    {
+        public string playerName;
+        public int points;
+    }
+
+    public void SaveHighScore()
+    {
+        HighScoreData data = new HighScoreData();
+        data.playerName = MenuUIHandler.playerName;
+        data.points = m_Points;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadHighScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            HighScoreData data = JsonUtility.FromJson<HighScoreData>(json);
+
+            h_name = data.playerName;
+            h_points = data.points;
+            /*Text highScore = GameObject.Find("HighScoreText").GetComponent<Text>();
+            highScore.text = "Best Score : " + data.playerName + " : " + data.points;*/
+        }
     }
 }
